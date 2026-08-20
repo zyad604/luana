@@ -1,0 +1,16 @@
+node_modules/
+dist/
+release/
+out/
+*.log
+*.exe
+.env
+.env.*
+.luda/
+Thumbs.db
+Desktop.ini
+.DS_Store
+release-builds/
+*.asar
+.idea/
+.vscode/
