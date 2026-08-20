@@ -10,6 +10,8 @@ const pool = new Map();
 
 function loadUserRules(cwd) {
   const files = [
+    path.join(os.homedir(), ".luda", "app.md"),
+    path.join(os.homedir(), ".luda", "AGENTS.md"),
     path.join(os.homedir(), ".claude", "CLAUDE.md"),
     path.join(os.homedir(), ".claude", "CLAUDE.local.md"),
     path.join(os.homedir(), ".grok", "AGENTS.md"),
@@ -300,7 +302,7 @@ class Agent {
     const bin = grokBin();
     const args = [
       "--rules",
-      "Obey the user's ~/.claude/CLAUDE.md on every reply. Same format, same voice, no exceptions.",
+      "Obey " + path.join(os.homedir(), ".luda", "app.md") + " on every reply. That file is the Luda agent. Same format, same voice, no exceptions.",
       "agent",
       "--always-approve",
       "--no-leader",
