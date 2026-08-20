@@ -3,6 +3,7 @@ import { ArrowUp, ChevronRight, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Picker, type PickerOption } from "@/components/ui/picker";
 import { cn } from "@/lib/utils";
 
 export type AgentItem =
@@ -20,6 +21,14 @@ export function Chat({
   busy,
   grokOk,
   folderName,
+  displayName,
+  glow,
+  model,
+  effort,
+  models,
+  efforts,
+  onModel,
+  onEffort,
   onSend,
   onCancel,
 }: {
@@ -27,6 +36,14 @@ export function Chat({
   busy: boolean;
   grokOk: boolean;
   folderName?: string | null;
+  displayName?: string;
+  glow?: boolean;
+  model: string;
+  effort: string;
+  models: PickerOption[];
+  efforts: PickerOption[];
+  onModel: (id: string) => void;
+  onEffort: (id: string) => void;
   onSend: (text: string) => void;
   onCancel: () => void;
 }) {
@@ -59,6 +76,7 @@ export function Chat({
   }
 
   const empty = items.length === 0;
+  const brand = displayName || "Luana";
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -80,14 +98,12 @@ export function Chat({
       >
         {empty ? (
           <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-            <div className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-sky-500 text-lg font-bold text-zinc-950">
-              L
+            <div className="logo-mark mb-4 grid h-14 w-14 place-items-center rounded-2xl text-xl font-bold text-zinc-950">
+              {(brand[0] || "L").toUpperCase()}
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight">{folderName || "Luda"}</h1>
+            <h1 className="text-[28px] font-semibold tracking-tight">{folderName || brand}</h1>
             <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              {folderName && folderName !== "Chat"
-                ? `This is ${folderName}.`
-                : "Normal chat up here. Switch to Code for project folders."}
+              {folderName && folderName !== "Chat" ? `This is ${folderName}.` : "Ask anything. Grok runs the tools."}
             </p>
             {!grokOk && (
               <p className="mt-4 max-w-md text-xs text-muted-foreground">
@@ -96,21 +112,18 @@ export function Chat({
             )}
           </div>
         ) : (
-          <div className="mx-auto w-full max-w-2xl space-y-6 px-4 py-8">
+          <div className="mx-auto w-full max-w-[720px] space-y-5 px-4 py-8">
             {items.map((it, i) => (
               <div key={i} className="select-text">
                 {it.kind === "user" && (
                   <div className="flex justify-end">
-                    <div className="max-w-[85%] rounded-2xl bg-secondary px-4 py-2.5 text-[15px] leading-6 whitespace-pre-wrap">
+                    <div className="user-bubble max-w-[85%] px-4 py-2.5 text-[15px] leading-6 whitespace-pre-wrap">
                       {it.text}
                     </div>
                   </div>
                 )}
                 {it.kind === "thought" && (
-                  <ThoughtBlock
-                    text={it.text}
-                    live={busy && i === items.length - 1}
-                  />
+                  <ThoughtBlock text={it.text} live={busy && i === items.length - 1} />
                 )}
                 {it.kind === "assistant" && (
                   <div className="text-[15px] leading-7 whitespace-pre-wrap text-foreground/90">{it.text}</div>
@@ -138,7 +151,7 @@ export function Chat({
                   </div>
                 )}
                 {it.kind === "phase" && (
-                  <div className="text-[11px] font-medium tracking-wide text-amber-400/90">{it.title}</div>
+                  <div className="text-[11px] font-medium tracking-wide text-[hsl(var(--brand))]">{it.title}</div>
                 )}
                 {it.kind === "error" && <div className="text-sm text-red-400">{it.message}</div>}
               </div>
@@ -150,15 +163,15 @@ export function Chat({
         )}
       </div>
 
-      <div className={cn("mx-auto w-full max-w-2xl px-4", empty ? "pb-16" : "pb-4")}>
-        <div className="rounded-2xl border bg-card p-2 shadow-lg">
+      <div className={cn("mx-auto w-full max-w-[720px] px-4", empty ? "pb-14" : "pb-4")}>
+        <div className={cn("composer", glow !== false && "composer-glow")}>
           <Textarea
             ref={box}
             value={text}
             rows={empty ? 3 : 2}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Message Luda…"
-            className="min-h-[56px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
+            placeholder={"Message " + brand + "…"}
+            className="min-h-[64px] resize-none border-0 bg-transparent px-3 pt-3 text-[15px] shadow-none focus-visible:ring-0"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -166,9 +179,30 @@ export function Chat({
               }
             }}
           />
-          <div className="flex items-center justify-between px-1 pb-1">
-            <span className="text-[11px] text-muted-foreground">Enter to send · Shift+Enter for newline</span>
-            <Button size="icon" className="h-8 w-8 rounded-full" onClick={busy ? onCancel : submit} disabled={!busy && !text.trim()}>
+          <div className="flex items-center gap-1 px-2 pb-2">
+            <Picker
+              compact
+              dropUp
+              value={model}
+              options={models}
+              onChange={onModel}
+              width="w-52"
+            />
+            <Picker
+              compact
+              dropUp
+              value={effort}
+              options={efforts}
+              onChange={onEffort}
+              width="w-32"
+            />
+            <span className="ml-auto pr-1 text-[10px] text-muted-foreground/70">Enter ↵</span>
+            <Button
+              size="icon"
+              className="send-btn h-8 w-8 shrink-0 rounded-full"
+              onClick={busy ? onCancel : submit}
+              disabled={!busy && !text.trim()}
+            >
               {busy ? <Square className="h-3.5 w-3.5" /> : <ArrowUp className="h-4 w-4" />}
             </Button>
           </div>

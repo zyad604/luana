@@ -9,11 +9,15 @@ export function Picker({
   options,
   onChange,
   width = "w-44",
+  dropUp = false,
+  compact = false,
 }: {
   value: string;
   options: PickerOption[];
   onChange: (id: string) => void;
   width?: string;
+  dropUp?: boolean;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -33,8 +37,9 @@ export function Picker({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "inline-flex h-7 max-w-[220px] items-center gap-1 rounded-md px-2 text-xs text-foreground/90 hover:bg-accent",
-          open && "bg-accent"
+          "inline-flex max-w-[220px] items-center gap-1 rounded-md px-2 text-xs text-foreground/80 hover:bg-white/5 hover:text-foreground",
+          compact ? "h-6" : "h-7",
+          open && "bg-white/5 text-foreground"
         )}
       >
         <span className="truncate">{current?.name || value}</span>
@@ -43,7 +48,8 @@ export function Picker({
       {open && (
         <div
           className={cn(
-            "absolute left-0 top-[calc(100%+4px)] z-50 overflow-hidden rounded-lg border bg-popover p-1 shadow-xl",
+            "absolute z-50 overflow-hidden rounded-lg border border-white/10 bg-popover p-1 shadow-2xl",
+            dropUp ? "bottom-[calc(100%+6px)] left-0" : "left-0 top-[calc(100%+4px)]",
             width
           )}
         >

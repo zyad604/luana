@@ -27,6 +27,8 @@ const {
 } = require("./grok-cli");
 const { startBridge, stopBridge } = require("./bridge");
 const library = require("./library");
+const prefs = require("./prefs");
+const skills = require("./skills");
 
 const APP_ROOT = path.resolve(__dirname, "..");
 let mainWindow = null;
@@ -203,8 +205,15 @@ function registerIpc() {
       bridge: "http://127.0.0.1:17380",
       library: lib,
       mode: lib.mode || "chat",
+      settings: prefs.load(),
     };
   });
+
+  ipcMain.handle("settings:get", () => prefs.load());
+  ipcMain.handle("settings:set", (_e, partial) => prefs.save(partial));
+  ipcMain.handle("skills:list", () => skills.list());
+  ipcMain.handle("skills:save", (_e, payload) => skills.save(payload));
+  ipcMain.handle("skills:remove", (_e, id) => skills.remove(id));
 
   ipcMain.handle("library:list", () => library.listLibrary());
   ipcMain.handle("library:mode", (_e, mode) => {

@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Files, Minus, Plus, Square, Terminal as TermIcon, X } from "lucide-react";
+import { Files, Minus, Plus, Settings as Gear, Square, Terminal as TermIcon, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { FileTree } from "@/components/FileTree";
 import { Chat, type AgentItem } from "@/components/Chat";
 import { TerminalPane } from "@/components/TerminalPane";
 import { CommandPalette } from "@/components/CommandPalette";
-import { Picker } from "@/components/ui/picker";
 import { FolderStack, type FolderCard } from "@/components/FolderStack";
+import { Settings, type AppSettings } from "@/components/Settings";
 import { baseName, cn } from "@/lib/utils";
+
+const DEFAULT_SETTINGS: AppSettings = {
+  displayName: "Luana",
+  accent: "amber",
+  density: "comfortable",
+  glow: true,
+  showFooter: true,
+};
 
 const FALLBACK_MODELS = [
   { id: "grok-4.6", name: "Grok 4.6" },
@@ -52,6 +60,8 @@ export default function App() {
   const [filesOn, setFilesOn] = useState(false);
   const [termOn, setTermOn] = useState(false);
   const [palette, setPalette] = useState(false);
+  const [settingsOn, setSettingsOn] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const activeIdRef = useRef(activeId);
   activeIdRef.current = activeId;
   const threadsRef = useRef(threads);
@@ -86,7 +96,7 @@ export default function App() {
         [id]: {
           items: data.items || [],
           grokSessionId: data.grokSessionId || null,
-          busy: Boolean(prev[id]?.busy),
+          busy: false,
         },
       };
       threadsRef.current = next;
@@ -97,6 +107,7 @@ export default function App() {
   const boot = useCallback(async () => {
     const st = await window.luda.invoke("app:state");
     setGrokOk(Boolean(st.grok));
+    if (st.settings) setSettings({ ...DEFAULT_SETTINGS, ...st.settings });
     setModel(st.model || "grok-4.6");
     setEffort(st.effort || "xhigh");
     setEfforts(st.efforts || FALLBACK_EFFORTS);
@@ -187,6 +198,9 @@ export default function App() {
       } else if (meta && e.key.toLowerCase() === "n") {
         e.preventDefault();
         void addFolder();
+      } else if (meta && e.key === ",") {
+        e.preventDefault();
+        setSettingsOn((v) => !v);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -394,29 +408,40 @@ export default function App() {
       { id: "new", label: "New chat", hint: "Ctrl+N", run: () => void addFolder() },
       { id: "term", label: "Toggle Terminal", hint: "Ctrl+`", run: () => setTermOn((v) => !v) },
       { id: "files", label: "Toggle Files", hint: "Ctrl+B", run: () => setFilesOn((v) => !v) },
+      { id: "settings", label: "Settings", hint: "Ctrl+,", run: () => setSettingsOn(true) },
     ],
     [mode]
   );
 
+  useEffect(() => {
+    document.documentElement.dataset.accent = settings.accent;
+    document.documentElement.dataset.density = settings.density;
+  }, [settings]);
+
+  async function saveSettings(next: AppSettings) {
+    const saved = await window.luda.invoke("settings:set", next);
+    setSettings(saved || next);
+  }
+
   return (
     <TooltipProvider delayDuration={200}>
       <div className="relative flex h-full flex-col bg-background">
-        <header className="titlebar-drag flex h-11 shrink-0 items-center border-b">
+        <header className="titlebar-drag flex h-11 shrink-0 items-center border-b border-white/5">
           <div className="titlebar-no-drag flex items-center gap-0.5 pl-2">
-            <div className="mr-1 grid h-6 w-6 place-items-center rounded-md bg-gradient-to-br from-amber-400 to-sky-500 text-[11px] font-bold text-zinc-950">
-              L
+            <div className="logo-mark mr-1 grid h-6 w-6 place-items-center rounded-md text-[11px] font-bold text-zinc-950">
+              {(settings.displayName[0] || "L").toUpperCase()}
             </div>
-            <div className="mr-1 flex rounded-md border p-0.5">
+            <div className="mr-1 flex rounded-md border border-white/10 p-0.5">
               <button
                 type="button"
-                className={cn("rounded px-2 py-0.5 text-xs", mode === "chat" ? "bg-accent" : "text-muted-foreground")}
+                className={cn("rounded px-2 py-0.5 text-xs", mode === "chat" ? "bg-white/10" : "text-muted-foreground")}
                 onClick={() => void switchMode("chat")}
               >
                 Chat
               </button>
               <button
                 type="button"
-                className={cn("rounded px-2 py-0.5 text-xs", mode === "code" ? "bg-accent" : "text-muted-foreground")}
+                className={cn("rounded px-2 py-0.5 text-xs", mode === "code" ? "bg-white/10" : "text-muted-foreground")}
                 onClick={() => void switchMode("code")}
               >
                 Code
@@ -427,8 +452,6 @@ export default function App() {
                 {workspace ? baseName(workspace) : "No folder"}
               </span>
             )}
-            <Picker value={model} options={models} onChange={(id) => { setModel(id); void window.luda.invoke("models:set", id); }} width="w-52" />
-            <Picker value={effort} options={efforts} onChange={(id) => { setEffort(id); void window.luda.invoke("effort:set", id); }} width="w-36" />
           </div>
 
           <div className="flex-1" />
@@ -447,6 +470,9 @@ export default function App() {
                 </TopBtn>
               </>
             )}
+            <TopBtn active={settingsOn} label="Settings" onClick={() => setSettingsOn(true)}>
+              <Gear className="h-4 w-4" />
+            </TopBtn>
             <div className="ml-1 flex h-11">
               <button className="w-11 hover:bg-accent" onClick={() => window.luda.invoke("window:action", "min")}>
                 <Minus className="mx-auto h-3.5 w-3.5" />
@@ -478,6 +504,14 @@ export default function App() {
             busy={live.busy}
             grokOk={grokOk}
             folderName={stacked.find((f) => f.id === activeId)?.name || (mode === "code" ? "Code" : "Chat")}
+            displayName={settings.displayName}
+            glow={settings.glow}
+            model={model}
+            effort={effort}
+            models={models}
+            efforts={efforts}
+            onModel={(id) => { setModel(id); void window.luda.invoke("models:set", id); }}
+            onEffort={(id) => { setEffort(id); void window.luda.invoke("effort:set", id); }}
             onSend={(t) => void sendAgent(t)}
             onCancel={() => void window.luda.invoke("agent:cancel", activeId)}
           />
@@ -521,14 +555,22 @@ export default function App() {
           </div>
         </div>
 
-        <footer className="flex h-6 shrink-0 items-center gap-3 border-t px-3 text-[11px] text-muted-foreground">
+        {settings.showFooter && (
+        <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-white/5 px-3 text-[11px] text-muted-foreground">
           <span>{grokOk ? "grok cli" : "grok cli missing"}</span>
           <span className="truncate">{workspace || "no folder"}</span>
           {Object.values(threads).filter((t) => t.busy).length > 1 && (
-            <span className="text-amber-400">{Object.values(threads).filter((t) => t.busy).length} running</span>
+            <span className="text-[hsl(var(--brand))]">{Object.values(threads).filter((t) => t.busy).length} running</span>
           )}
           <span className="ml-auto">{model} · {efforts.find((e) => e.id === effort)?.name || effort}</span>
         </footer>
+        )}
+        <Settings
+          open={settingsOn}
+          settings={settings}
+          onClose={() => setSettingsOn(false)}
+          onSave={(next) => void saveSettings(next)}
+        />
         <CommandPalette open={palette} onOpenChange={setPalette} commands={commands} />
       </div>
     </TooltipProvider>
