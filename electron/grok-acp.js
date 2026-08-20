@@ -8,6 +8,40 @@ const { grokBin, applyModelState } = require("./grok-cli");
 
 const pool = new Map();
 
+function loadUserRules(cwd) {
+  const files = [
+    path.join(os.homedir(), ".claude", "CLAUDE.md"),
+    path.join(os.homedir(), ".claude", "CLAUDE.local.md"),
+    path.join(os.homedir(), ".grok", "AGENTS.md"),
+    path.join(os.homedir(), "AGENTS.md"),
+  ];
+  if (cwd) {
+    files.push(path.join(cwd, ".claude", "CLAUDE.md"), path.join(cwd, "CLAUDE.md"), path.join(cwd, "AGENTS.md"));
+  }
+  const seen = new Set();
+  const parts = [];
+  for (const f of files) {
+    const key = path.resolve(f).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    try {
+      if (!fs.existsSync(f)) continue;
+      const t = fs.readFileSync(f, "utf8").trim();
+      if (t) parts.push("# " + path.basename(f) + "\n# " + f + "\n\n" + t);
+    } catch {
+      /* skip */
+    }
+  }
+  return parts.join("\n\n---\n\n");
+}
+
+function sessionMeta(cwd) {
+  const meta = { yoloMode: true };
+  const rules = loadUserRules(cwd);
+  if (rules) meta.rules = rules;
+  return meta;
+}
+
 class Agent {
   constructor(threadId) {
     this.threadId = threadId;
@@ -264,7 +298,13 @@ class Agent {
 
   startAgent({ model, effort, cwd, grokSessionId }) {
     const bin = grokBin();
-    const args = ["agent", "--always-approve", "--no-leader"];
+    const args = [
+      "--rules",
+      "Obey the user's ~/.claude/CLAUDE.md on every reply. Same format, same voice, no exceptions.",
+      "agent",
+      "--always-approve",
+      "--no-leader",
+    ];
     if (model) args.push("-m", model);
     if (effort) args.push("--effort", effort);
     args.push("stdio");
@@ -333,7 +373,7 @@ class Agent {
     const created = await this.rpc("session/new", {
       cwd,
       mcpServers: [],
-      _meta: { yoloMode: true },
+      _meta: sessionMeta(cwd),
     });
     this.sessionId = created.sessionId || created.session_id;
     if (!this.sessionId) throw new Error("grok agent did not return a session");
@@ -349,7 +389,7 @@ class Agent {
     const created = await this.rpc("session/new", {
       cwd,
       mcpServers: [],
-      _meta: { yoloMode: true },
+      _meta: sessionMeta(cwd),
     });
     this.sessionId = created.sessionId || created.session_id;
     this.promptsSinceCompact = 0;
