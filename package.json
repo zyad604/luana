@@ -4,10 +4,10 @@
   "author": "Zyad Almasabi <zyadalmasabi@gmail.com>",
   "license": "MIT",
   "description": "Luana — desktop Grok agent (chat + coding folders)",
-  "homepage": "https://github.com/zyadalmasabi/luana",
+  "homepage": "https://github.com/zyad604/luana",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zyadalmasabi/luana.git"
+    "url": "https://github.com/zyad604/luana.git"
   },
   "main": "electron/main.js",
   "bin": {

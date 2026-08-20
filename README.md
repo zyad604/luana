@@ -58,7 +58,7 @@ Confirm `C:\Users\<you>\.grok\bin\grok.exe` exists and `grok models` lists grok-
 **From source**
 
 ```powershell
-git clone https://github.com/zyadalmasabi/luana.git
+git clone https://github.com/zyad604/luana.git
 cd luana
 npm install
 npm run dist
