@@ -1,7 +1,6 @@
 # Luana
 
-Desktop Grok agent. Chat in the middle. Project folders on the side. Grok CLI does the work — Luana is the UI.
-
+its like desktop app but for Grok 
 Windows. Electron + Vite + React. Talks to [Grok Build CLI](https://x.ai/grok) over ACP stdio (`grok agent --always-approve --no-leader stdio`). Same login, same models, same tools (read/edit/bash/web search) as the terminal.
 
 Author: **Zyad ** · `zyadalmasabi@gmail.com`
