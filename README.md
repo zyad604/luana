@@ -161,4 +161,4 @@ src/components/Chat.tsx
 
 ## License
 
-MIT © Zyad Almasabi
+MIT © zyad 
